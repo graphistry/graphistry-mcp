@@ -12,10 +12,10 @@ if [ -z "$VIRTUAL_ENV" ]; then
   if [ -d ".venv" ]; then
     source .venv/bin/activate
   else
-    echo "Creating virtual environment with uvx..."
-    uvx venv .venv
+    echo "Creating virtual environment with python3..."
+    python3 -m venv .venv
     source .venv/bin/activate
-    uvx pip install -e ".[dev]"
+    pip install -e ".[dev]"
   fi
 fi
 
@@ -52,7 +52,9 @@ if [ -z "$GRAPHISTRY_USERNAME" ] || [ -z "$GRAPHISTRY_PASSWORD" ]; then
     fi
   fi
 else
-  echo "✓ Graphistry credentials found in environment variables"
+  echo "✓ Graphistry credentials found in environment variables:"
+  echo "  GRAPHISTRY_USERNAME is set: $([ -n "$GRAPHISTRY_USERNAME" ] && echo True || echo False)"
+  echo "  GRAPHISTRY_PASSWORD is set: $([ -n "$GRAPHISTRY_PASSWORD" ] && echo True || echo False)"
 fi
 
 # Check for mode parameter
@@ -78,8 +80,8 @@ echo "Starting Graphistry MCP server in $MODE mode..."
 
 if [ "$MODE" == "http" ]; then
   echo "Server will be available at http://localhost:$PORT"
-  uvx python src/graphistry_mcp_server/server.py --http $PORT
+  python src/graphistry_mcp_server/server.py --http $PORT
 else
   # stdio mode
-  exec uvx python src/graphistry_mcp_server/server.py
+  exec python src/graphistry_mcp_server/server.py
 fi

@@ -15,6 +15,9 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import graphistry
 import pandas as pd
 import networkx as nx
@@ -32,8 +35,8 @@ mcp = FastMCP("graphistry-mcp-server")
 graph_cache = {}
 
 # Debug: Print environment variables for Graphistry
-print(f"[DEBUG] GRAPHISTRY_USERNAME: {os.environ.get('GRAPHISTRY_USERNAME')}")
-print(f"[DEBUG] GRAPHISTRY_PASSWORD: {os.environ.get('GRAPHISTRY_PASSWORD')}")
+print(f"[DEBUG] GRAPHISTRY_USERNAME is set: {os.environ.get('GRAPHISTRY_USERNAME') is not None}")
+print(f"[DEBUG] GRAPHISTRY_PASSWORD is set: {os.environ.get('GRAPHISTRY_PASSWORD') is not None}")
 
 # Register Graphistry client with credentials and API version 3
 print("[DEBUG] Calling graphistry.register() with api=3, protocol=https, server=hub.graphistry.com")
