@@ -8,8 +8,20 @@
       "autoApprove": [
         "visualize_graph",
         "get_graph_info",
+        "get_graph_ids",
         "apply_layout",
         "detect_patterns",
+        "encode_point_color",
+        "encode_point_size",
+        "encode_point_icon",
+        "encode_point_badge",
+        "apply_ring_categorical_layout",
+        "apply_group_in_a_box_layout",
+        "apply_modularity_weighted_layout",
+        "apply_ring_continuous_layout",
+        "apply_time_ring_layout",
+        "apply_tree_layout",
+        "set_graph_settings",
         "health_check"
       ],
       "alwaysAllow": [
@@ -37,8 +49,20 @@
       "autoApprove": [
         "visualize_graph",
         "get_graph_info",
+        "get_graph_ids",
         "apply_layout",
         "detect_patterns",
+        "encode_point_color",
+        "encode_point_size",
+        "encode_point_icon",
+        "encode_point_badge",
+        "apply_ring_categorical_layout",
+        "apply_group_in_a_box_layout",
+        "apply_modularity_weighted_layout",
+        "apply_ring_continuous_layout",
+        "apply_time_ring_layout",
+        "apply_tree_layout",
+        "set_graph_settings",
         "health_check"
       ],
       "alwaysAllow": [
