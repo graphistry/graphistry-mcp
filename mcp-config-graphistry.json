@@ -1,0 +1,76 @@
+{
+  "name": "Graphistry Graph Visualization",
+  "description": "GPU-accelerated graph visualization and analytics for network data exploration, pattern discovery, and relationship analysis",
+  "version": "0.2.0",
+  "type": "http",
+  "url": "http://localhost:8081",
+  "icon": "🌐",
+  "command": "python",
+  "args": [
+    "/Users/barton/infinity-topos/graphistry-mcp/health_server.py",
+    "8081"
+  ],
+  "env": {
+    "PYTHONPATH": "/Users/barton/infinity-topos/graphistry-mcp",
+    "GRAPHISTRY_USERNAME": "demo@graphistry.com",
+    "GRAPHISTRY_PASSWORD": "demo123"
+  },
+  "capabilities": [
+    "graphVisualization",
+    "networkAnalysis",
+    "patternDetection"
+  ],
+  "tools": [
+    {
+      "name": "visualize_graph",
+      "description": "Create a graph visualization from different data formats (pandas, networkx, edge_list)",
+      "parameters": {
+        "data_format": "Type of input data (pandas, networkx, or edge_list)",
+        "edges": "List of edge connections with optional attributes",
+        "nodes": "Optional list of nodes with attributes",
+        "title": "Title for the visualization",
+        "description": "Optional description for the visualization"
+      }
+    },
+    {
+      "name": "get_graph_info",
+      "description": "Retrieve information about a stored graph including metrics and statistics",
+      "parameters": {
+        "graph_id": "ID of the graph to retrieve information for"
+      }
+    },
+    {
+      "name": "apply_layout",
+      "description": "Apply a layout algorithm to a graph for different analysis perspectives",
+      "parameters": {
+        "graph_id": "ID of the graph to apply layout to",
+        "layout": "Layout algorithm to apply (force_directed, radial, circle, grid)"
+      }
+    },
+    {
+      "name": "detect_patterns",
+      "description": "Identify interesting patterns, communities, and anomalies within graphs",
+      "parameters": {
+        "graph_id": "ID of the graph to analyze",
+        "analysis_type": "Type of pattern analysis to perform (community_detection, centrality, path_finding, anomaly_detection)",
+        "options": "Additional options for the analysis"
+      }
+    },
+    {
+      "name": "health_check",
+      "description": "Check the health of the server and return system/resource information",
+      "parameters": {}
+    }
+  ],
+  "disabled": false,
+  "autoApprove": [
+    "health_check",
+    "visualize_graph",
+    "get_graph_info",
+    "apply_layout",
+    "detect_patterns"
+  ],
+  "alwaysAllow": [
+    "health_check"
+  ]
+}

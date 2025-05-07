@@ -1,0 +1,51 @@
+{
+  "mcpServers": {
+    "graphistry-http": {
+      "type": "http", 
+      "url": "http://localhost:8082",
+      "description": "Graphistry GPU-accelerated graph visualization with pattern detection and network analysis (HTTP mode)",
+      "disabled": false,
+      "autoApprove": [
+        "visualize_graph",
+        "get_graph_info",
+        "apply_layout",
+        "detect_patterns",
+        "health_check"
+      ],
+      "alwaysAllow": [
+        "get_graph_info",
+        "health_check"
+      ]
+    },
+    "graphistry": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "${PROJECT_ROOT}",
+        "run", 
+        "python",
+        "${PROJECT_ROOT}/run_graphistry_server.py"
+      ],
+      "env": {
+        "GRAPHISTRY_USERNAME": "your_username",
+        "GRAPHISTRY_PASSWORD": "your_password",
+        "LOG_LEVEL": "INFO",
+        "PYTHONPATH": "${PROJECT_ROOT}"
+      },
+      "description": "Graphistry GPU-accelerated graph visualization with pattern detection and network analysis",
+      "disabled": true,
+      "autoApprove": [
+        "visualize_graph",
+        "get_graph_info",
+        "apply_layout",
+        "detect_patterns",
+        "health_check"
+      ],
+      "alwaysAllow": [
+        "get_graph_info",
+        "health_check"
+      ],
+      "type": "stdio"
+    }
+  }
+} 

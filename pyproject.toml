@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphistry-mcp-server"
+version = "0.1.0"
+description = "Graphistry MCP integration for GPU-accelerated graph visualization using FastMCP"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Graphistry Community" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastmcp>=2.2.6",
+    "graphistry",  # Required for hub.graphistry.com visualizations
+    "pandas",
+    "networkx",
+    "asyncio",
+    "uvicorn",
+    "python-louvain",  # For community detection
+    "python-dotenv",    # For loading .env files with credentials
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "ruff",
+    "mypy"
+]
+
+visualization = [
+    "matplotlib>=3.5.0",  # For local visualization if needed
+    "plotly>=5.10.0",     # For interactive graphs
+    "pygraphviz>=1.9"     # Alternative graph rendering
+]
+
+[project.scripts]
+graphistry-mcp = "graphistry_fastmcp.server:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
