@@ -121,20 +121,10 @@ The main tool, `visualize_graph`, now accepts a single `graph_data` dictionary. 
 
 ### What We Learned / Caveats & Gotchas
 
-- **API Version:** You must call `graphistry.register()` with `api=3` and your credentials before using any Graphistry features. Otherwise, the client defaults to API v1, which requires an API key and will fail.
 - **Environment Variables:** Always ensure `GRAPHISTRY_USERNAME` and `GRAPHISTRY_PASSWORD` are set in the environment where the server runs. Debug prints can help verify this.
 - **Virtual Environment:** Use the venv's Python directly or activate the environment before running the server. This avoids dependency and path issues.
 - **LLM Tool Schemas:** LLMs and tool bridges work best with single-argument (dict) APIs. Avoid multi-argument signatures for tools you want to expose to LLMs.
-- **Debugging:** Add verbose debug prints for environment and registration issues. This saves hours of confusion!
 - **Cursor Integration:** When adding to Cursor, use the full path to the venv's Python and ensure all environment variables are set in the config.
-- **State Files:** If you see references to scripts or files that don't exist (like `verify-installation.sh`), ignore or remove them—they may be from earlier versions.
-
-## Troubleshooting
-
-- **API key errors:** Means you are using API v1. Fix by calling `graphistry.register(api=3, ...)` with your credentials.
-- **Credentials not found:** Double-check your environment variables and .env file.
-- **Module not found:** Make sure you installed the package in editable mode (`pip install -e .`) and are using the correct Python environment.
-- **Server not responding:** Check logs and debug prints for environment or registration issues.
 
 ## Contributing
 
