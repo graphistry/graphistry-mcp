@@ -214,24 +214,34 @@ async def apply_layout(graph_id: str, layout: str) -> Dict[str, Any]:
         raise
 
 @mcp.tool()
-async def detect_patterns(graph_id: str, 
-                        analysis_type: str,
-                        options: Optional[Dict[str, Any]] = None,
-                        ctx: Optional[Context] = None) -> Dict[str, Any]:
-    """Identify patterns, communities, and anomalies within graphs.
-    
+async def detect_patterns(graph_id: str, ctx: Optional[Context] = None) -> Dict[str, Any]:
+    """
+    Identify patterns, communities, and anomalies within graphs. Runs all supported analyses and returns a combined report.
+
     Args:
         graph_id: ID of the graph to analyze
-        analysis_type: Type of pattern analysis to perform
-        options: Additional options for the analysis
         ctx: MCP context for progress reporting
+
+    Returns:
+        Dictionary with results from all analyses that succeeded. Keys may include:
+            - degree_centrality
+            - betweenness_centrality
+            - closeness_centrality
+            - communities (if community detection is available)
+            - shortest_path (if path finding is possible)
+            - path_length
+            - anomalies (if anomaly detection is available)
+            - errors (dict of analysis_type -> error message)
+
+    Example:
+        result = await mcp.call_tool("detect_patterns", {"graph_id": "graph_1"})
     """
     try:
         if graph_id not in graph_cache:
             raise ValueError(f"Graph not found: {graph_id}")
 
         if ctx:
-            await ctx.info(f"Starting {analysis_type} analysis...")
+            await ctx.info("Starting pattern detection (all analyses)...")
 
         graph_data = graph_cache[graph_id]
         nx_graph = graph_data["nx_graph"]
@@ -245,30 +255,47 @@ async def detect_patterns(graph_id: str,
             raise ValueError("Graph data not available for analysis")
 
         results = {}
-        if analysis_type == "community_detection":
-            # Implement community detection
-            pass
-        elif analysis_type == "centrality":
+        errors = {}
+
+        # Centrality
+        try:
             results["degree_centrality"] = nx.degree_centrality(nx_graph)
             results["betweenness_centrality"] = nx.betweenness_centrality(nx_graph)
             results["closeness_centrality"] = nx.closeness_centrality(nx_graph)
-        elif analysis_type == "path_finding":
-            if not options or "source" not in options or "target" not in options:
-                raise ValueError("source and target nodes required for path finding")
-            try:
-                path = nx.shortest_path(nx_graph, options["source"], options["target"])
+        except Exception as e:
+            errors["centrality"] = str(e)
+
+        # Community detection
+        try:
+            import community as community_louvain
+            partition = community_louvain.best_partition(nx_graph)
+            results["communities"] = partition
+        except Exception as e:
+            errors["community_detection"] = str(e)
+
+        # Path finding (try between first two nodes if possible)
+        try:
+            nodes = list(nx_graph.nodes())
+            if len(nodes) >= 2:
+                path = nx.shortest_path(nx_graph, nodes[0], nodes[1])
                 results["shortest_path"] = path
                 results["path_length"] = len(path) - 1
-            except nx.NetworkXNoPath:
-                results["error"] = "No path exists between specified nodes"
-        elif analysis_type == "anomaly_detection":
-            # Implement anomaly detection
-            pass
-        else:
-            raise ValueError(f"Unsupported analysis type: {analysis_type}")
-    
+        except Exception as e:
+            errors["path_finding"] = str(e)
+
+        # Anomaly detection (placeholder)
+        try:
+            # Example: nodes with degree 1 as "anomalies"
+            anomalies = [n for n, d in nx_graph.degree() if d == 1]
+            results["anomalies"] = anomalies
+        except Exception as e:
+            errors["anomaly_detection"] = str(e)
+
+        if errors:
+            results["errors"] = errors
+
         if ctx:
-            await ctx.info("Analysis complete!")
+            await ctx.info("Pattern detection complete!")
 
         return results
     except Exception as e:
