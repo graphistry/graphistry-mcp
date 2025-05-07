@@ -90,7 +90,6 @@ python run_graphistry_mcp.py
 ### Security & Credential Handling
 
 - The server loads credentials from environment variables or `.env` using [python-dotenv](https://pypi.org/project/python-dotenv/), so you can safely use a `.env` file for local development.
-- **Credentials are never printed in logs.** Only whether they are set is shown (e.g., `GRAPHISTRY_PASSWORD is set: True`).
 - The `start-graphistry-mcp.sh` script sources `.env` and is the most robust and secure way to launch the server.
 
 ### Adding to Cursor (or other LLM tools)
@@ -144,9 +143,7 @@ The main tool, `visualize_graph`, now accepts a single `graph_data` dictionary. 
 ### What We Learned / Caveats & Gotchas
 
 - **Environment Variables & .env:** Always ensure `GRAPHISTRY_USERNAME` and `GRAPHISTRY_PASSWORD` are set in the environment or `.env` file. The server loads `.env` automatically using `python-dotenv`.
-- **No Credential Leaks:** Debug prints and logs never show your actual credentials—only whether they are set.
 - **Virtual Environment:** Use the venv's Python directly or activate the environment before running the server. This avoids dependency and path issues.
-- **LLM Tool Schemas:** LLMs and tool bridges work best with single-argument (dict) APIs. Avoid multi-argument signatures for tools you want to expose to LLMs.
 - **Cursor Integration:** When adding to Cursor, use the full path to the venv's Python and ensure all environment variables are set in the config.
 
 ## Contributing
