@@ -148,7 +148,7 @@ sys.path.insert(0, str(src_path))
 sys.path.insert(0, str(current_dir))
 
 # Ensure dependencies are installed
-required_packages = ["fastmcp>=2.2.6", "graphistry", "pandas", "networkx", "python-dotenv", "pydantic"]
+required_packages = ["fastmcp>=2.2.6", "graphistry", "pandas", "networkx", "python-igraph", "python-dotenv", "pydantic"]
 for package in required_packages:
     try:
         if package.startswith("fastmcp"):

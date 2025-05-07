@@ -9,18 +9,17 @@ network analysis, threat detection, and pattern discovery through Graphistry's
 GPU-accelerated visualization capabilities.
 """
 
-import logging
-from typing import Any, Dict, Optional
 import os
-
-from dotenv import load_dotenv
-load_dotenv()
-
+import logging
+from typing import Any, Dict, List, Optional
 import graphistry
 import pandas as pd
 import networkx as nx
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp import Context
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -160,6 +159,11 @@ async def visualize_graph(graph_data: Dict[str, Any], ctx: Optional[Context] = N
     except Exception as e:
         logger.error(f"Error in visualize_graph: {e}")
         raise
+
+@mcp.tool()
+async def get_graph_ids() -> List[str]:
+    """Get a list of all stored graph IDs."""
+    return list(graph_cache.keys())
 
 @mcp.tool()
 async def get_graph_info(graph_id: str) -> Dict[str, Any]:
@@ -317,6 +321,324 @@ async def detect_patterns(graph_id: str, ctx: Optional[Context] = None) -> Dict[
     except Exception as e:
         logger.error(f"Error in detect_patterns: {e}")
         raise
+
+@mcp.tool()
+async def encode_point_color(
+    graph_id: str,
+    column: str,
+    categorical_mapping: Optional[dict] = None,
+    default_mapping: Optional[str] = None,
+    as_continuous: Optional[bool] = False
+) -> Dict[str, Any]:
+    """
+    Set node color encoding for a graph using Graphistry's encode_point_color API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify (from visualize_graph).
+        column (str): The node column to use for color encoding (e.g., 'type', 'score').
+        categorical_mapping (dict, optional): Map of category values to color codes. Example: {'mac': '#F99', 'macbook': '#99F'}. If not provided, Graphistry will auto-assign colors.
+        default_mapping (str, optional): Color code to use for values not in categorical_mapping. Example: 'silver'.
+        as_continuous (bool, optional): If True, treat the column as continuous and use a gradient palette. Example: True for numeric columns like 'score'.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        encode_point_color(graph_id, column='type', categorical_mapping={'mac': '#F99', 'macbook': '#99F'}, default_mapping='silver')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    kwargs = {"column": column}
+    if categorical_mapping:
+        kwargs["categorical_mapping"] = categorical_mapping
+    if default_mapping:
+        kwargs["default_mapping"] = default_mapping
+    if as_continuous:
+        kwargs["as_continuous"] = as_continuous
+    g = g.encode_point_color(**kwargs)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def encode_point_size(
+    graph_id: str,
+    column: str,
+    categorical_mapping: Optional[dict] = None,
+    default_mapping: Optional[float] = None,
+) -> Dict[str, Any]:
+    """
+    Set node size encoding for a graph using Graphistry's encode_point_size API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        column (str): The node column to use for size encoding (e.g., 'score', 'type').
+        categorical_mapping (dict, optional): Map of category values to sizes. Example: {'mac': 50, 'macbook': 100}. If not provided, Graphistry will auto-assign sizes.
+        default_mapping (float, optional): Size to use for values not in categorical_mapping. Example: 20.
+        as_continuous (bool, optional): If True, treat the column as continuous and use a size gradient. Example: True for numeric columns like 'score'.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        encode_point_size(graph_id, column='score', as_continuous=True)
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    kwargs = {"column": column}
+    if categorical_mapping:
+        kwargs["categorical_mapping"] = categorical_mapping
+    if default_mapping is not None:
+        kwargs["default_mapping"] = default_mapping
+    g = g.encode_point_size(**kwargs)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def encode_point_icon(
+    graph_id: str,
+    column: str,
+    categorical_mapping: Optional[dict] = None,
+    default_mapping: Optional[str] = None,
+    as_text: Optional[bool] = False,
+    continuous_binning: Optional[list] = None
+) -> Dict[str, Any]:
+    """
+    Set node icon encoding for a graph using Graphistry's encode_point_icon API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        column (str): The node column to use for icon encoding (e.g., 'type', 'origin').
+        categorical_mapping (dict, optional): Map of category values to icon names or URLs. Example: {'macbook': 'laptop', 'Canada': 'flag-icon-ca'}. See FontAwesome 4 or ISO country codes for built-ins.
+        default_mapping (str, optional): Icon to use for values not in categorical_mapping. Example: 'question'.
+        as_text (bool, optional): If True, use text as the icon (for continuous binning or direct text display).
+        continuous_binning (list, optional): List of [threshold, icon] pairs for binning continuous values. Example: [[33, 'low'], [66, 'mid'], [None, 'high']].
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        encode_point_icon(graph_id, column='type', categorical_mapping={'macbook': 'laptop', 'Canada': 'flag-icon-ca'}, default_mapping='question')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    kwargs = {"column": column}
+    if categorical_mapping:
+        kwargs["categorical_mapping"] = categorical_mapping
+    if default_mapping:
+        kwargs["default_mapping"] = default_mapping
+    if as_text:
+        kwargs["as_text"] = as_text
+    if continuous_binning:
+        kwargs["continuous_binning"] = continuous_binning
+    g = g.encode_point_icon(**kwargs)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def encode_point_badge(
+    graph_id: str,
+    column: str,
+    position: str = "TopRight",
+    categorical_mapping: Optional[dict] = None,
+    default_mapping: Optional[str] = None,
+    as_text: Optional[bool] = False,
+    continuous_binning: Optional[list] = None
+) -> Dict[str, Any]:
+    """
+    Set node badge encoding for a graph using Graphistry's encode_point_badge API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        column (str): The node column to use for badge encoding (e.g., 'type', 'origin').
+        position (str, optional): Badge position on the node. Example: 'TopRight', 'BottomLeft', etc.
+        categorical_mapping (dict, optional): Map of category values to badge icons or images. Example: {'macbook': 'laptop', 'Canada': 'flag-icon-ca'}.
+        default_mapping (str, optional): Badge to use for values not in categorical_mapping. Example: 'question'.
+        as_text (bool, optional): If True, use text as the badge (for continuous binning or direct text display).
+        continuous_binning (list, optional): List of [threshold, badge] pairs for binning continuous values. Example: [[33, None], [66, 'info-circle'], [None, 'exclamation-triangle']].
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        encode_point_badge(graph_id, column='type', position='TopRight', categorical_mapping={'macbook': 'laptop'}, default_mapping='question')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    kwargs = {"column": column, "position": position}
+    if categorical_mapping:
+        kwargs["categorical_mapping"] = categorical_mapping
+    if default_mapping:
+        kwargs["default_mapping"] = default_mapping
+    if as_text:
+        kwargs["as_text"] = as_text
+    if continuous_binning:
+        kwargs["continuous_binning"] = continuous_binning
+    g = g.encode_point_badge(**kwargs)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_ring_categorical_layout(graph_id: str, ring_col: str) -> Dict[str, Any]:
+    """
+    Apply a categorical ring layout to the graph using Graphistry's ring_categorical_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        ring_col (str): The node column to use for determining ring membership (e.g., a categorical attribute like 'type' or 'group').
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_ring_categorical_layout(graph_id, ring_col='type')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.ring_categorical_layout(ring_col)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_group_in_a_box_layout(graph_id: str) -> Dict[str, Any]:
+    """
+    Apply group-in-a-box layout to the graph using Graphistry's group_in_a_box_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_group_in_a_box_layout(graph_id)
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.group_in_a_box_layout()
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_modularity_weighted_layout(graph_id: str) -> Dict[str, Any]:
+    """
+    Apply modularity weighted layout to the graph using Graphistry's modularity_weighted_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_modularity_weighted_layout(graph_id)
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.modularity_weighted_layout()
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_ring_continuous_layout(graph_id: str, ring_col: str) -> Dict[str, Any]:
+    """
+    Apply a continuous ring layout to the graph using Graphistry's ring_continuous_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        ring_col (str): The node column to use for determining ring position (should be a continuous/numeric attribute, e.g., 'score').
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_ring_continuous_layout(graph_id, ring_col='score')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.ring_continuous_layout(ring_col)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_time_ring_layout(graph_id: str, time_col: str) -> Dict[str, Any]:
+    """
+    Apply a time ring layout to the graph using Graphistry's time_ring_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        time_col (str): The node column to use for determining ring position (should be a datetime or timestamp attribute, e.g., 'created_at').
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_time_ring_layout(graph_id, time_col='created_at')
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    # Ensure the time_col is datetime64 for Graphistry
+    nodes_df = graph_cache[graph_id].get("nodes_df")
+    if nodes_df is not None and time_col in nodes_df.columns:
+        if not pd.api.types.is_datetime64_any_dtype(nodes_df[time_col]):
+            # Coerce to datetime64
+            nodes_df[time_col] = pd.to_datetime(nodes_df[time_col], errors="coerce")
+            # Update the graph's nodes table
+            g = g.nodes(nodes_df)
+    g = g.time_ring_layout(time_col)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def apply_tree_layout(graph_id: str) -> Dict[str, Any]:
+    """
+    Apply a tree (layered hierarchical) layout to the graph using Graphistry's tree_layout API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        apply_tree_layout(graph_id)
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.tree_layout()
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
+
+@mcp.tool()
+async def set_graph_settings(graph_id: str, url_params: dict) -> Dict[str, Any]:
+    """
+    Set visualization settings for a graph using Graphistry's settings API.
+
+    Args:
+        graph_id (str): The ID of the graph to modify.
+        url_params (dict): Dictionary of Graphistry URL parameters to control visualization. Example: {'pointSize': 0.5, 'edgeInfluence': 2, 'play': 0}.
+
+    Returns:
+        dict: { 'graph_id': ..., 'url': ... } with the updated visualization URL.
+
+    Example:
+        set_graph_settings(graph_id, url_params={'pointSize': 0.5, 'play': 0})
+    """
+    if graph_id not in graph_cache:
+        raise ValueError(f"Graph not found: {graph_id}")
+    g = graph_cache[graph_id]["graph"]
+    g = g.settings(url_params=url_params)
+    graph_cache[graph_id]["graph"] = g
+    return {"graph_id": graph_id, "url": g.plot(render=False)}
 
 if __name__ == "__main__":
     mcp.run()

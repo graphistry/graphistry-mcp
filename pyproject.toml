@@ -22,6 +22,7 @@ dependencies = [
     "graphistry",  # Required for hub.graphistry.com visualizations
     "pandas",
     "networkx",
+    "python-igraph",  # For advanced layouts (group_in_a_box, modularity_weighted)
     "asyncio",
     "uvicorn",
     "python-louvain",  # For community detection
