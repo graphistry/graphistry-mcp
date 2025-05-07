@@ -118,7 +118,7 @@ The main tool, `visualize_graph`, now accepts a single `graph_data` dictionary. 
 ```python
 {
   "graph_data": {
-    "data_format": "edge_list",
+    "graph_type": "graph",
     "edges": [
       {"source": "A", "target": "B"},
       {"source": "A", "target": "C"},
@@ -136,6 +136,25 @@ The main tool, `visualize_graph`, now accepts a single `graph_data` dictionary. 
     ],
     "title": "5-node, 10-edge Complete Graph",
     "description": "A complete graph of 5 nodes (K5) where every node is connected to every other node."
+  }
+}
+```
+
+Example (hypergraph):
+
+```python
+{
+  "graph_data": {
+    "graph_type": "hypergraph",
+    "edges": [
+      {"source": "A", "target": "B", "group": "G1", "weight": 0.7},
+      {"source": "A", "target": "C", "group": "G1", "weight": 0.6},
+      {"source": "B", "target": "C", "group": "G2", "weight": 0.8},
+      {"source": "A", "target": "D", "group": "G2", "weight": 0.5}
+    ],
+    "columns": ["source", "target", "group"],
+    "title": "Test Hypergraph",
+    "description": "A simple test hypergraph."
   }
 }
 ```
