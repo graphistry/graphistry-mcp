@@ -21,8 +21,8 @@ logging.basicConfig(
 logger = logging.getLogger("graphistry-runner")
 
 # Server paths
-SCRIPT_DIR = Path(__file__).parent.absolute()
-SERVER_PATH = SCRIPT_DIR / "src" / "graphistry_fastmcp" / "server.py"
+SCRIPT_DIR = Path(__file__).parent
+SERVER_PATH = SCRIPT_DIR / "src" / "graphistry_mcp_server" / "server.py"
 CONFIG_PATH = SCRIPT_DIR / "mcp-config-graphistry.json"
 
 def check_dependencies():

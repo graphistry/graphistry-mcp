@@ -198,33 +198,20 @@ try:
     # Attempt to import module directly
     sys.path.insert(0, str(current_dir))
     try:
-        from src.graphistry_fastmcp.server import main, mcp
-        logger.info("Successfully imported main function from graphistry_fastmcp.server")
-        module_path = "src.graphistry_fastmcp.server"
+        from src.graphistry_mcp_server.server import mcp
+        logger.info("Successfully imported mcp from src.graphistry_mcp_server.server")
+        module_path = "src.graphistry_mcp_server.server"
     except ImportError:
         try:
-            from graphistry_fastmcp.server import main, mcp
-            logger.info("Successfully imported main function from direct graphistry_fastmcp.server")
-            module_path = "graphistry_fastmcp.server"
+            from graphistry_mcp_server.server import mcp
+            logger.info("Successfully imported mcp from graphistry_mcp_server.server")
+            module_path = "graphistry_mcp_server.server"
         except ImportError as e:
             logger.error(f"Could not import server module: {e}")
             print(f"Could not import server module: {e}", file=sys.stderr)
-            logger.error(f"Python path: {sys.path}")
-            
-            # List all files in src directory to help debug
-            try:
-                print(f"Contents of src directory:", file=sys.stderr)
-                for item in os.listdir(str(src_path)):
-                    print(f"  {item}", file=sys.stderr)
-                
-                graphistry_dir = src_path / 'graphistry_fastmcp'
-                if graphistry_dir.exists():
-                    print(f"Contents of graphistry_fastmcp directory:", file=sys.stderr)
-                    for item in os.listdir(str(graphistry_dir)):
-                        print(f"  {item}", file=sys.stderr)
-            except Exception as dir_error:
-                print(f"Error listing directory contents: {dir_error}", file=sys.stderr)
-            
+            print("Contents of src directory:", file=sys.stderr)
+            for item in os.listdir(src_path):
+                print(f"  {item}", file=sys.stderr)
             sys.exit(1)
     
     # Run the main function

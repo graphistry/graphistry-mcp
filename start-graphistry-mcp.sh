@@ -78,8 +78,8 @@ echo "Starting Graphistry MCP server in $MODE mode..."
 
 if [ "$MODE" == "http" ]; then
   echo "Server will be available at http://localhost:$PORT"
-  uvx python src/graphistry_fastmcp/server.py --http $PORT
+  uvx python src/graphistry_mcp_server/server.py --http $PORT
 else
   # stdio mode
-  exec uvx python src/graphistry_fastmcp/server.py
+  exec uvx python src/graphistry_mcp_server/server.py
 fi

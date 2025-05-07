@@ -44,7 +44,7 @@ visualization = [
 ]
 
 [project.scripts]
-graphistry-mcp = "graphistry_fastmcp.server:main"
+graphistry-mcp = "graphistry_mcp_server.server:main"
 
 [tool.ruff]
 line-length = 100

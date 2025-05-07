@@ -13,6 +13,7 @@ import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
+import os
 
 import graphistry
 import pandas as pd
@@ -30,32 +31,68 @@ mcp = FastMCP("graphistry-mcp-server")
 # Initialize state
 graph_cache = {}
 
+# Debug: Print environment variables for Graphistry
+print(f"[DEBUG] GRAPHISTRY_USERNAME: {os.environ.get('GRAPHISTRY_USERNAME')}")
+print(f"[DEBUG] GRAPHISTRY_PASSWORD: {os.environ.get('GRAPHISTRY_PASSWORD')}")
+
+# Register Graphistry client with credentials and API version 3
+print("[DEBUG] Calling graphistry.register() with api=3, protocol=https, server=hub.graphistry.com")
+graphistry.register(
+    api=3,
+    protocol="https",
+    server="hub.graphistry.com",
+    username=os.environ.get("GRAPHISTRY_USERNAME"),
+    password=os.environ.get("GRAPHISTRY_PASSWORD")
+)
+print("[DEBUG] graphistry.register() call complete")
+
 @mcp.tool()
-async def visualize_graph(data_format: str, 
-                        nodes: Optional[List[Dict[str, Any]]] = None,
-                        edges: Optional[List[Dict[str, Any]]] = None,
-                        node_id: Optional[str] = None,
-                        source: Optional[str] = None,
-                        destination: Optional[str] = None,
-                        title: Optional[str] = None,
-                        description: Optional[str] = None,
-                        ctx: Optional[Context] = None) -> Dict[str, Any]:
-    """Visualize a graph using Graphistry's GPU-accelerated renderer.
-    
+async def visualize_graph(graph_data: Dict[str, Any], ctx: Optional[Context] = None) -> Dict[str, Any]:
+    """
+    Visualize a graph using Graphistry's GPU-accelerated renderer.
+
     Args:
-        data_format: The format of the input data (pandas, networkx, edge_list)
-        nodes: List of nodes (required for edge_list format)
-        edges: List of edges (required for edge_list format)
-        node_id: Column name for node IDs (for pandas format)
-        source: Column name for edge source (for pandas format)
-        destination: Column name for edge destination (for pandas format)
-        title: Title for the visualization
-        description: Description for the visualization
+        graph_data (dict): Dictionary describing the graph to visualize. Fields:
+            - data_format (str, required): Format of the input data. One of:
+                * "edge_list": Use with 'edges' (list of {source, target}) and optional 'nodes' (list of {id, ...})
+                * "pandas": Use with 'edges' (list of dicts), 'source' (str), 'destination' (str), and optional 'node_id' (str)
+                * "networkx": Use with 'edges' as a networkx.Graph object
+            - edges (list, required for edge_list/pandas): List of edges, each as a dict with at least 'source' and 'target' keys (e.g., [{"source": "A", "target": "B"}, ...])
+            - nodes (list, optional): List of nodes, each as a dict with at least 'id' key (e.g., [{"id": "A"}, ...])
+            - node_id (str, optional): Column name for node IDs (for pandas format)
+            - source (str, optional): Column name for edge source (for pandas format)
+            - destination (str, optional): Column name for edge destination (for pandas format)
+            - title (str, optional): Title for the visualization
+            - description (str, optional): Description for the visualization
         ctx: MCP context for progress reporting
+
+    Example:
+        graph_data = {
+            "data_format": "edge_list",
+            "edges": [
+                {"source": "A", "target": "B"},
+                {"source": "A", "target": "C"},
+                ...
+            ],
+            "nodes": [
+                {"id": "A"}, {"id": "B"}, {"id": "C"}
+            ],
+            "title": "My Graph",
+            "description": "A simple example graph."
+        }
     """
     try:
         if ctx:
             await ctx.info("Initializing graph visualization...")
+
+        data_format = graph_data.get("data_format")
+        edges = graph_data.get("edges")
+        nodes = graph_data.get("nodes")
+        node_id = graph_data.get("node_id")
+        source = graph_data.get("source")
+        destination = graph_data.get("destination")
+        title = graph_data.get("title")
+        description = graph_data.get("description")
 
         # Handle different input formats
         if data_format == "edge_list":
