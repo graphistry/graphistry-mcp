@@ -159,11 +159,26 @@ Example (hypergraph):
 }
 ```
 
-### What We Learned / Caveats & Gotchas
+## Available MCP Tools
 
-- **Environment Variables & .env:** Always ensure `GRAPHISTRY_USERNAME` and `GRAPHISTRY_PASSWORD` are set in the environment or `.env` file. The server loads `.env` automatically using `python-dotenv`.
-- **Virtual Environment:** Use the venv's Python directly or activate the environment before running the server. This avoids dependency and path issues.
-- **Cursor Integration:** When adding to Cursor, use the full path to the venv's Python and ensure all environment variables are set in the config.
+The following MCP tools are available for graph visualization, analysis, and manipulation:
+
+- **visualize_graph**: Visualize a graph or hypergraph using Graphistry's GPU-accelerated renderer.
+- **get_graph_ids**: List all stored graph IDs in the current session.
+- **get_graph_info**: Get metadata (node/edge counts, title, description) for a stored graph.
+- **apply_layout**: Apply a standard layout (force_directed, radial, circle, grid) to a graph.
+- **detect_patterns**: Run network analysis (centrality, community detection, path finding, anomaly detection).
+- **encode_point_color**: Set node color encoding by column (categorical or continuous).
+- **encode_point_size**: Set node size encoding by column (categorical or continuous).
+- **encode_point_icon**: Set node icon encoding by column (categorical, with icon mapping or binning).
+- **encode_point_badge**: Set node badge encoding by column (categorical, with icon mapping or binning).
+- **apply_ring_categorical_layout**: Arrange nodes in rings by a categorical column (e.g., group/type).
+- **apply_group_in_a_box_layout**: Arrange nodes in group-in-a-box layout (requires igraph).
+- **apply_modularity_weighted_layout**: Arrange nodes by modularity-weighted layout (requires igraph).
+- **apply_ring_continuous_layout**: Arrange nodes in rings by a continuous column (e.g., score).
+- **apply_time_ring_layout**: Arrange nodes in rings by a datetime column (e.g., created_at).
+- **apply_tree_layout**: Arrange nodes in a tree (layered hierarchical) layout.
+- **set_graph_settings**: Set advanced visualization settings (point size, edge influence, etc.).
 
 ## Contributing
 
