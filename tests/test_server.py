@@ -3,7 +3,7 @@ Tests for the Graphistry MCP server.
 """
 import json
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any
 import pytest
 import graphistry
 from dotenv import load_dotenv
@@ -21,7 +21,7 @@ if not password or not username:
 print(f"\nInitializing Graphistry with username: {username}")
 graphistry.register(api=3, protocol="https", server="hub.graphistry.com", username=username, password=password)
 
-def parse_mcp_response(response) -> Dict[str, Any]:
+def parse_mcp_response(response: Any) -> Dict[str, Any]:
     """Parse MCP response into a dictionary."""
     if isinstance(response, list) and len(response) > 0:
         content = response[0]

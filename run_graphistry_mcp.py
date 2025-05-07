@@ -82,8 +82,8 @@ def find_available_port(start_port=8080, max_attempts=20):
 
 # Check if MCP server port is available (commonly uses port 8080)
 if not is_port_available(8080):
-    logger.warning(f"⚠️ Port 8080 is already in use by another process")
-    print(f"⚠️ Warning: Port 8080 is already in use by another process.", file=sys.stderr)
+    logger.warning("⚠️ Port 8080 is already in use by another process")
+    print("⚠️ Warning: Port 8080 is already in use by another process.", file=sys.stderr)
     
     # Find an alternative port
     alt_port = find_available_port(8081)
@@ -94,7 +94,7 @@ if not is_port_available(8080):
         # Set environment variable with alternative port suggestion
         os.environ["GRAPHISTRY_SUGGESTED_PORT"] = str(alt_port)
     else:
-        print(f"❌ No alternative ports available in range 8081-8100.", file=sys.stderr)
+        print("❌ No alternative ports available in range 8081-8100.", file=sys.stderr)
         logger.warning("No alternative ports available in range 8081-8100")
     
     try:
@@ -106,7 +106,7 @@ if not is_port_available(8080):
                 if result.stdout:
                     print(f"Process using port 8080:\n{result.stdout}", file=sys.stderr)
                     logger.info(f"Process using port 8080:\n{result.stdout}")
-                    print(f"To free the port, you can terminate the process using: kill <PID>", file=sys.stderr)
+                    print("To free the port, you can terminate the process using: kill <PID>", file=sys.stderr)
             except Exception as e:
                 logger.error(f"Unable to check what's using port 8080: {e}")
     except Exception as e:
@@ -255,7 +255,7 @@ try:
             env_username = os.environ.get("GRAPHISTRY_USERNAME")
             env_password = os.environ.get("GRAPHISTRY_PASSWORD")
             
-            print(f"Environment variables:")
+            print("Environment variables:")
             print(f"GRAPHISTRY_USERNAME found: {'Yes' if env_username else 'No'}")
             print(f"GRAPHISTRY_PASSWORD found: {'Yes' if env_password else 'No'}")
             
@@ -268,7 +268,7 @@ try:
                 env_values = dotenv_values(dotenv_path)
                 dotenv_username = env_values.get('GRAPHISTRY_USERNAME')
                 dotenv_password = env_values.get('GRAPHISTRY_PASSWORD')
-                print(f"Credentials from .env file:")
+                print("Credentials from .env file:")
                 print(f"GRAPHISTRY_USERNAME found: {'Yes' if dotenv_username else 'No'}")
                 print(f"GRAPHISTRY_PASSWORD found: {'Yes' if dotenv_password else 'No'}")
             
