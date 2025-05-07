@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("graphistry-mcp-server")
 
 # Initialize state
-graph_cache = {}
+graph_cache: Dict[str, Any] = {}
 
 # Debug: Print environment variables for Graphistry
 print(f"[DEBUG] GRAPHISTRY_USERNAME is set: {os.environ.get('GRAPHISTRY_USERNAME') is not None}")
@@ -55,78 +55,100 @@ async def visualize_graph(graph_data: Dict[str, Any], ctx: Optional[Context] = N
     Visualize a graph using Graphistry's GPU-accelerated renderer.
 
     Args:
+        graph_type (str, optional): Type of graph to visualize. Must be one of "graph" (two-way edges, default), "hypergraph" (many-to-many edges).
         graph_data (dict): Dictionary describing the graph to visualize. Fields:
-            - data_format (str, required): Format of the input data. One of:
-                * "edge_list": Use with 'edges' (list of {source, target}) and optional 'nodes' (list of {id, ...})
-                * "pandas": Use with 'edges' (list of dicts), 'source' (str), 'destination' (str), and optional 'node_id' (str)
-                * "networkx": Use with 'edges' as a networkx.Graph object
-            - edges (list, required for edge_list/pandas): List of edges, each as a dict with at least 'source' and 'target' keys (e.g., [{"source": "A", "target": "B"}, ...])
-            - nodes (list, optional): List of nodes, each as a dict with at least 'id' key (e.g., [{"id": "A"}, ...])
-            - node_id (str, optional): Column name for node IDs (for pandas format)
-            - source (str, optional): Column name for edge source (for pandas format)
-            - destination (str, optional): Column name for edge destination (for pandas format)
+            - edges (list, required): List of edges, each as a dict with at least 'source' and 'target' keys (e.g., [{"source": "A", "target": "B"}, ...]) and any other columns you want to include in the edge table
+            - nodes (list, optional): List of nodes, each as a dict with at least 'id' key (e.g., [{"id": "A"}, ...]) and any other columns you want to include in the node table
+            - node_id (str, optional): Column name for node IDs, if nodes are provided, must be provided.
+            - source (str, optional): Column name for edge source (default: "source")
+            - destination (str, optional): Column name for edge destination (default: "target")
+            - columns (list, optional): List of column names for hypergraph edge table, use if graph_type is hypergraph.
             - title (str, optional): Title for the visualization
             - description (str, optional): Description for the visualization
         ctx: MCP context for progress reporting
 
-    Example:
+    Example (graph):
         graph_data = {
-            "data_format": "edge_list",
+            "graph_type": "graph",
             "edges": [
-                {"source": "A", "target": "B"},
-                {"source": "A", "target": "C"},
+                {"source": "A", "target": "B", "weight": 1},
+                {"source": "A", "target": "C", "weight": 2},
                 ...
             ],
             "nodes": [
-                {"id": "A"}, {"id": "B"}, {"id": "C"}
+                {"id": "A", "label": "Node A"},
+                {"id": "B", "label": "Node B"},
+                ...
             ],
+            "node_id": "id",
+            "source": "source",
+            "destination": "target",
             "title": "My Graph",
             "description": "A simple example graph."
+        }
+
+    Example (hypergraph):
+        graph_data = {
+            "graph_type": "hypergraph",
+            "edges": [
+                {"source": "A", "target": "B", "group": "G1", "weight": 1},
+                {"source": "A", "target": "C", "group": "G1", "weight": 1},
+                ...
+            ],
+            "columns": ["source", "target", "group"],
+            "title": "My Hypergraph",
+            "description": "A simple example hypergraph."
         }
     """
     try:
         if ctx:
             await ctx.info("Initializing graph visualization...")
 
-        data_format = graph_data.get("data_format")
+        graph_type = graph_data.get("graph_type") or "graph"
         edges = graph_data.get("edges")
         nodes = graph_data.get("nodes")
         node_id = graph_data.get("node_id")
-        source = graph_data.get("source")
-        destination = graph_data.get("destination")
+        source = graph_data.get("source") or "source"
+        destination = graph_data.get("destination") or "target"
         title = graph_data.get("title")
         description = graph_data.get("description")
+        columns = graph_data.get("columns", None)
 
-        # Handle different input formats
-        if data_format == "edge_list":
+        g = None
+        edges_df = None
+        nodes_df = None
+
+        if graph_type == "graph":
             if not edges:
                 raise ValueError("edges list required for edge_list format")
-            df = pd.DataFrame(edges)
-            # Ensure source and target columns exist
-            if "source" not in df.columns or "target" not in df.columns:
-                raise ValueError("edges must contain 'source' and 'target' columns")
-            g = graphistry.bind(source="source", destination="target").edges(df)
-        elif data_format == "pandas":
-            if not (source and destination):
-                raise ValueError("source and destination column names required for pandas format")
-            df = pd.DataFrame(edges)
-            g = graphistry.bind(source=source, destination=destination)
-            if node_id:
-                g = g.bind(node=node_id)
-            g = g.edges(df)
-        elif data_format == "networkx":
-            g = graphistry.bind().from_networkx(edges)
+            edges_df = pd.DataFrame(edges)
+            if nodes:
+                nodes_df = pd.DataFrame(nodes)
+                g = graphistry.edges(edges_df, source=source, destination=destination).nodes(nodes_df, node=node_id)
+            else:
+                g = graphistry.edges(edges_df, source=source, destination=destination)
+            nx_graph = nx.from_pandas_edgelist(edges_df, source=source, target=destination)
+        elif graph_type == "hypergraph":
+            if not edges:
+                raise ValueError("edges list required for hypergraph format")
+            edges_df = pd.DataFrame(edges)
+            g = graphistry.hypergraph(edges_df, columns)['graph']
+            nx_graph = None
         else:
-            raise ValueError(f"Unsupported data format: {data_format}")
-    
+            raise ValueError(f"Unsupported graph_type: {graph_type}")
+        g = g.name(title)
         # Generate unique ID and cache
         graph_id = f"graph_{len(graph_cache)}"
         graph_cache[graph_id] = {
             "graph": g,
             "title": title,
             "description": description,
-            "edges_df": df if data_format in ["edge_list", "pandas"] else None,
-            "nx_graph": edges if data_format == "networkx" else None
+            "edges_df": edges_df,
+            "nodes_df": nodes_df,
+            "node_id": node_id,
+            "source": source,
+            "destination": destination,
+            "nx_graph": nx_graph
         }
     
         if ctx:
@@ -143,27 +165,20 @@ async def visualize_graph(graph_data: Dict[str, Any], ctx: Optional[Context] = N
 
 @mcp.tool()
 async def get_graph_info(graph_id: str) -> Dict[str, Any]:
-    """Get information about a stored graph visualization.
-    
-    Args:
-        graph_id: ID of the graph to retrieve information for
-    """
+    """Get information about a stored graph visualization."""
     try:
         if graph_id not in graph_cache:
             raise ValueError(f"Graph not found: {graph_id}")
 
         graph_data = graph_cache[graph_id]
-        g = graph_data["graph"]
         edges_df = graph_data["edges_df"]
-        nx_graph = graph_data["nx_graph"]
+        source = graph_data["source"]
+        destination = graph_data["destination"]
 
         # Get node and edge counts
         if edges_df is not None:
-            node_count = len(set(edges_df["source"].unique()) | set(edges_df["target"].unique()))
+            node_count = len(set(edges_df[source].unique()) | set(edges_df[destination].unique()))
             edge_count = len(edges_df)
-        elif nx_graph is not None:
-            node_count = len(nx_graph.nodes())
-            edge_count = len(nx_graph.edges())
         else:
             node_count = 0
             edge_count = 0
@@ -236,8 +251,6 @@ async def detect_patterns(graph_id: str, ctx: Optional[Context] = None) -> Dict[
             - anomalies (if anomaly detection is available)
             - errors (dict of analysis_type -> error message)
 
-    Example:
-        result = await mcp.call_tool("detect_patterns", {"graph_id": "graph_1"})
     """
     try:
         if graph_id not in graph_cache:
@@ -249,10 +262,12 @@ async def detect_patterns(graph_id: str, ctx: Optional[Context] = None) -> Dict[
         graph_data = graph_cache[graph_id]
         nx_graph = graph_data["nx_graph"]
         edges_df = graph_data["edges_df"]
+        source = graph_data["source"]
+        destination = graph_data["destination"]
 
         # Convert to NetworkX graph if needed
         if nx_graph is None and edges_df is not None:
-            nx_graph = nx.from_pandas_edgelist(edges_df, source="source", target="target")
+            nx_graph = nx.from_pandas_edgelist(edges_df, source=source, target=destination)
 
         if nx_graph is None:
             raise ValueError("Graph data not available for analysis")
