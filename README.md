@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/graphistry-graphistry-mcp-badge.png)](https://mseep.ai/app/graphistry-graphistry-mcp)
+
 # Graphistry MCP Integration
 
 GPU-accelerated graph visualization and analytics for Large Language Models using Graphistry and MCP.
