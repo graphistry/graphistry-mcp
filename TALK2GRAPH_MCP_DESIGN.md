@@ -5,6 +5,8 @@ This document covers how Louie (GraphistryGPT) integrates with the Talk2Graph MC
 ## TL;DR
 
 - **Louie needs zero code changes.** The existing MCP plugin discovers tools dynamically from any MCP server URL. Just register the viz MCP endpoint as a connector.
+- **Fix the system prompt first.** Louie responds like an investigation agent (verbose, verdicts, evidence). Update `TALK2GRAPH_SYSTEM_PROMPT` in `louieClient.js` to make it concise. This is the biggest UX win and it is a ~20 line change on the viz side.
+- **Register the MCP server URL.** Tools are built but Louie cannot call them until the connector is registered. One env var or API call.
 - **The six tools in PR #3043 are the right V1 surface.** Add one more: `get_data_sample`.
 - **Animation is Graphistry's concern.** Add an `animate` boolean to `set_encoding` so Louie can request it, but the implementation is entirely on the viz side.
 - **V2 direction: collections + GFQL.** Instead of individual `set_encoding`/`add_filter` calls, a single `create_collection` tool that accepts a GFQL query and visual config.
@@ -139,11 +141,59 @@ Recommended options:
 
 For V1 single-node deployment, any of these work.
 
+## System Prompt: Critical UX Fix
+
+The current `TALK2GRAPH_SYSTEM_PROMPT` in `louieClient.js` is minimal, and because Louie defaults to its full investigation agent behavior, responses come back with verdict/evidence/investigation-style formatting that is way too verbose for a graph manipulation assistant. This is the single biggest UX issue to fix for V1.
+
+### The problem
+
+Louie's default `LouieAgent` is designed for deep investigations: it produces structured analysis with verdicts, evidence sections, confidence scores, and multi-paragraph explanations. That is exactly the wrong tone for Talk2Graph, where a user says "color by threat score" and expects a one-line confirmation, not a forensic report.
+
+### The fix
+
+Replace the system prompt in `louieClient.js` with something that constrains the response style. This is entirely on the viz side, no Louie changes needed. The system prompt is prepended to the user's query on the first message (before a dthread exists), so it sets the tone for the entire conversation.
+
+**Recommended prompt:**
+
+```javascript
+const TALK2GRAPH_SYSTEM_PROMPT = `You are Talk2Graph, a concise graph visualization assistant embedded in Graphistry.
+
+RESPONSE STYLE:
+- Answer in 1-3 sentences. Be brief and direct.
+- When you use a tool, confirm what you did in one line: "Done — colored nodes by threat_score."
+- Do NOT produce investigation reports, verdicts, evidence sections, or confidence scores.
+- Do NOT use markdown headers, bullet lists, or structured analysis formats.
+- If the user asks a question about the data, give a short factual answer based on the session context.
+
+TOOLS:
+- You have MCP tools for manipulating the visualization (set_encoding, reset_encoding, add_filter, reset_filters, get_session_info, get_data_sample).
+- Use these tools when the user wants to change colors, sizes, filters, or inspect data.
+- Only use column names that appear in the session context.
+- When using tools, always include the session_id from the session context.
+
+WHAT YOU ARE NOT:
+- You are not an investigation agent. Do not analyze threats or produce reports.
+- You are not a search engine. If you do not know something, say so briefly.
+- You are a graph manipulation assistant. Help users see their data differently.`;
+```
+
+### Why this works without Louie changes
+
+The system prompt is injected by the viz backend in `buildQueryWithContext()` before the query reaches Louie. Louie's `LouieAgent` sees it as part of the user message on the first turn and follows the instructions. On subsequent turns (when a dthread exists), the conversation history carries the tone forward. No agent routing changes, no new agent type, no Louie PR needed.
+
+### V2: Dedicated Talk2Graph agent
+
+For V2, Louie should have a proper `Talk2GraphAgent` with its own prompt and tool routing, rather than relying on system prompt injection. This would:
+- Use a lighter LLM (faster responses for simple operations)
+- Have graph analytics domain knowledge built into the agent prompt
+- Understand GFQL syntax for generating collection queries
+- Skip the investigation pipeline entirely
+
+But for V1, the system prompt override in `louieClient.js` is the right lever and it is fast to ship.
+
 ## Session Context Optimization
 
 PR #3043 already does this correctly: on the first chat message, the viz backend gathers session context (columns, counts, metadata) and prepends it to the query before sending to Louie. This saves Louie from needing to call `get_session_info` on the first turn, cutting 2-5 seconds off the response time.
-
-The system prompt in `louieClient.js` tells the LLM to "only use column names that appear in the session context." This is the right constraint for V1.
 
 ## V2 Direction: Collections + GFQL
 
@@ -233,9 +283,27 @@ uv run python -m graphistry_mcp_server.mock_viz_server
 uv run fastmcp run src/graphistry_mcp_server/mock_viz_server.py --transport streamable-http --port 3100
 ```
 
+## Current Status (2026-03-18)
+
+What is working:
+- Chat widget is in the right side panel, functional
+- Chat proxy hits Louie, gets responses with session context
+- Louie can answer questions about the graph (columns, structure, data)
+
+What is not working yet:
+- **MCP server URL not registered** — Louie cannot call tools to change the visualization. This is just a config step (see "Registering the connector" above).
+- **Responses are too verbose** — Louie produces investigation-style reports instead of brief confirmations. Fix by updating `TALK2GRAPH_SYSTEM_PROMPT` (see "System Prompt: Critical UX Fix" above).
+
 ## Immediate Next Steps
 
-1. **Des + Manfred**: Review this doc, add `get_data_sample` tool and `animate` flag to `set_encoding` in PR #3043
-2. **Des + Manfred + Jared**: Short call to align on collections MCP design for V2
-3. **Jared**: Test Louie integration against mock server (register `http://localhost:3100/mcp` on local Louie)
-4. **Des**: Record a Loom of the current Talk2Graph demo for async review
+**Priority 1 (unblocks everything):**
+1. **Des**: Update `TALK2GRAPH_SYSTEM_PROMPT` in `louieClient.js` to the concise prompt above. This is the single biggest UX improvement and is a ~20 line change.
+2. **Des or infra**: Register the MCP server URL on the Louie instance so tools actually work. Either set `MCP_SERVER_URL` env var or send `CreateConnector` event.
+
+**Priority 2 (V1 completeness):**
+3. **Des + Manfred**: Add `get_data_sample` tool and `animate` flag to `set_encoding` in PR #3043
+4. **Des**: Record a Loom of the updated demo (concise responses + working tools) for async review
+
+**Priority 3 (V2 planning):**
+5. **Des + Manfred + Jared**: Short call to align on `create_collection` MCP tool design for V2
+6. **Jared**: Test Louie integration against mock server in this repo
